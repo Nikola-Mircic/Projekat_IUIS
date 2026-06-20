@@ -50,22 +50,22 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="8"/>
-                        <ColumnDefinition Width="2*"/>
+                        <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
                     <!-- RadioButtons -->
                     <StackPanel Grid.Column="0" Orientation="Horizontal">
-                        <RadioButton Content="&gt;" Margin="0,0,8,0"
+                        <RadioButton Content="&gt;" Margin="0,0,16,0"
                                      IsChecked="{Binding IsGreaterThan}"
                                      GroupName="IdFilter"
                                      FontSize="14" Foreground="#1E1E2E"
                                      ToolTip="ID greater than"/>
-                        <RadioButton Content="&lt;" Margin="0,0,8,0"
+                        <RadioButton Content="&lt;" Margin="0,0,16,0"
                                      IsChecked="{Binding IsLessThan}"
                                      GroupName="IdFilter"
                                      FontSize="14" Foreground="#1E1E2E"
                                      ToolTip="ID less than"/>
-                        <RadioButton Content="=" Margin="0,0,8,0"
+                        <RadioButton Content="=" Margin="0,0,16,0"
                                      IsChecked="{Binding IsEqualTo}"
                                      GroupName="IdFilter"
                                      FontSize="14" Foreground="#1E1E2E"
