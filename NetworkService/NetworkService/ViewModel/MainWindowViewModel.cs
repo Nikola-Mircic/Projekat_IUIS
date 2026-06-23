@@ -1,14 +1,18 @@
 ﻿
 using NetworkService.Model;
 using NetworkService.Model.NetworkService.Model;
+using NetworkService.View;
 using NetworkService.Views;
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Windows;
+using System.Windows.Documents;
 using System.Windows.Input;
 
 namespace NetworkService.ViewModel
@@ -16,13 +20,14 @@ namespace NetworkService.ViewModel
     public class MainWindowViewModel : BaseViewModel
     {
         // ── Centralna lista entiteta ──────────────────────────────────
+
+
         public static ObservableCollection<ServerEntity> Entities { get; set; }
-            = new ObservableCollection<ServerEntity>();
 
         // ── Unapred definisani tipovi (T6) ────────────────────────────
         public static ServerType WebServer = new ServerType("Web server", "/Images/web_server.png");
         public static ServerType FileServer = new ServerType("File server", "/Images/file_server.png");
-        public static ServerType DatabaseServer = new ServerType("Database server", "/Images/database_server.png");
+        public static ServerType DatabaseServer = new ServerType("Database server", "/Images/db_server.png");
 
         public static string LogFilePath = "Log.txt";
 
@@ -67,6 +72,8 @@ namespace NetworkService.ViewModel
 
         public MainWindowViewModel()
         {
+            Entities = GetInitialEntities();
+
             // Kreiranje view instanci — čuvamo ih da sadržaj ne nestaje pri navigaciji
             _homeView = new HomeView();
             _entitiesView = new NetworkEntitiesView();
@@ -192,6 +199,23 @@ namespace NetworkService.ViewModel
             {
                 Console.WriteLine($"Error processing measurement: {ex.Message}");
             }
+        }
+
+        private static ObservableCollection<ServerEntity> GetInitialEntities()
+        {
+            return new ObservableCollection<ServerEntity>
+            {
+                new ServerEntity { Id = 1,  Name = "Main Web Server",      IpAddress = "192.168.1.10",  Type = WebServer,       LastMeasuredValue = 55.0 },
+                new ServerEntity { Id = 2,  Name = "Backup Web Server",    IpAddress = "192.168.1.11",  Type = WebServer,       LastMeasuredValue = 68.0 },
+                new ServerEntity { Id = 3,  Name = "Primary Database",     IpAddress = "192.168.2.10",  Type = DatabaseServer,  LastMeasuredValue = 72.0 },
+                new ServerEntity { Id = 4,  Name = "Backup Database",      IpAddress = "192.168.2.11",  Type = DatabaseServer,  LastMeasuredValue = 49.0 },
+                new ServerEntity { Id = 5,  Name = "Replica Database",     IpAddress = "192.168.2.12",  Type = DatabaseServer,  LastMeasuredValue = 61.0 },
+                new ServerEntity { Id = 6,  Name = "File Storage Primary", IpAddress = "192.168.3.10",  Type = FileServer,      LastMeasuredValue = 53.0 },
+                new ServerEntity { Id = 7,  Name = "File Storage Backup",  IpAddress = "192.168.3.11",  Type = FileServer,      LastMeasuredValue = 47.0 },
+                new ServerEntity { Id = 8,  Name = "Media File Server",    IpAddress = "192.168.3.12",  Type = FileServer,      LastMeasuredValue = 70.0 },
+                new ServerEntity { Id = 9,  Name = "Auth Web Server",      IpAddress = "192.168.1.12",  Type = WebServer,       LastMeasuredValue = 58.0 },
+                new ServerEntity { Id = 10, Name = "Archive Database",     IpAddress = "192.168.2.13",  Type = DatabaseServer,  LastMeasuredValue = 64.0 },
+            };
         }
     }
 }

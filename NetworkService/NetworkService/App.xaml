@@ -11,6 +11,7 @@
         <conv:BoolToVisibilityConverter   x:Key="BoolToVisibilityConverter"/>
         <conv:StringToVisibilityConverter x:Key="StringToVisibilityConverter"/>
         <conv:BoolToColorConverter        x:Key="BoolToColorConverter"/>
+        <conv:BoolToAlarmBrushConverter   x:Key="BoolToAlarmBrushConverter"/>
 
         <!-- ═══════════════════════════════════════════════════════════
              PALETA BOJA
@@ -575,6 +576,38 @@
                             </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter Property="Foreground" Value="#7C3AED"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        
+        <!-- ═══════════════════════════════════════════════════════════
+             TREE TOGGLE BUTTON
+        ════════════════════════════════════════════════════════════ -->
+        <Style x:Key="TreeToggleButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#1E1E2E"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Width" Value="36"/>
+            <Setter Property="Height" Value="64"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Panel.ZIndex" Value="20"/>
+            
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                        CornerRadius="8,0,0,8">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#2D2D3E"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#7C3AED"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>

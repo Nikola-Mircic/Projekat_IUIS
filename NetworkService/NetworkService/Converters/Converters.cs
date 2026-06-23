@@ -38,4 +38,16 @@ namespace NetworkService.Converters
         public object ConvertBack(object value, Type t, object p, CultureInfo c) =>
             throw new NotImplementedException();
     }
+
+    // bool (IsOutOfRange) → pozadinska boja canvas ćelije
+    public class BoolToAlarmBrushConverter : IValueConverter
+    {
+        public object Convert(object value, Type t, object p, CultureInfo c) =>
+            value is true
+                ? new SolidColorBrush(Color.FromRgb(0xFF, 0xF0, 0xF0))  // svetlo crvena
+                : new SolidColorBrush(Color.FromRgb(0xF0, 0xFF, 0xF4)); // svetlo zelena
+
+        public object ConvertBack(object value, Type t, object p, CultureInfo c) =>
+            throw new NotImplementedException();
+    }
 }

@@ -1,0 +1,398 @@
+﻿using NetworkService.Commands;
+using NetworkService.Model;
+using NetworkService.Model.NetworkService.Model;
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Windows.Controls;
+using System.Windows.Input;
+
+namespace NetworkService.ViewModel
+{
+    public class NetworkEntitiesViewModel : BaseViewModel
+    {
+        // ── Podaci ───────────────────────────────────────────────────
+        private ObservableCollection<ServerEntity> Entities =>
+            MainWindowViewModel.Entities;
+
+        private ObservableCollection<ServerEntity> _filteredEntities;
+        public ObservableCollection<ServerEntity> FilteredEntities
+        {
+            get => _filteredEntities;
+            set { _filteredEntities = value; OnPropertyChanged(nameof(FilteredEntities)); }
+        }
+
+        public List<ServerType> ServerTypes { get; } = new List<ServerType>
+        {
+            new ServerType("All",             ""),
+            MainWindowViewModel.WebServer,
+            MainWindowViewModel.FileServer,
+            MainWindowViewModel.DatabaseServer
+        };
+
+        // ── Filter P2 ─────────────────────────────────────────────
+        private ServerType _selectedServerType;
+        public ServerType SelectedServerType
+        {
+            get => _selectedServerType;
+            set { _selectedServerType = value; OnPropertyChanged(nameof(SelectedServerType)); }
+        }
+
+        private bool _isGreaterThan;
+        public bool IsGreaterThan
+        {
+            get => _isGreaterThan;
+            set { _isGreaterThan = value; OnPropertyChanged(nameof(IsGreaterThan)); }
+        }
+
+        private bool _isLessThan = true;
+        public bool IsLessThan
+        {
+            get => _isLessThan;
+            set { _isLessThan = value; OnPropertyChanged(nameof(IsLessThan)); }
+        }
+
+        private bool _isEqualTo;
+        public bool IsEqualTo
+        {
+            get => _isEqualTo;
+            set { _isEqualTo = value; OnPropertyChanged(nameof(IsEqualTo)); }
+        }
+
+        private string _idFilterText = "";
+        public string IdFilterText
+        {
+            get => _idFilterText;
+            set { _idFilterText = value; OnPropertyChanged(nameof(IdFilterText)); ValidateIdFilter(); }
+        }
+
+        private string _idFilterError = "";
+        public string IdFilterError
+        {
+            get => _idFilterError;
+            set { _idFilterError = value; OnPropertyChanged(nameof(IdFilterError)); }
+        }
+
+        // ── Selekcija ────────────────────────────────────────────────
+        private ServerEntity _selectedEntity;
+        public ServerEntity SelectedEntity
+        {
+            get => _selectedEntity;
+            set { _selectedEntity = value; OnPropertyChanged(nameof(SelectedEntity)); }
+        }
+
+        // ── Add forma ────────────────────────────────────────────────
+        private bool _isAddFormVisible;
+        public bool IsAddFormVisible
+        {
+            get => _isAddFormVisible;
+            set { _isAddFormVisible = value; OnPropertyChanged(nameof(IsAddFormVisible)); }
+        }
+
+        private string _newEntityId = "";
+        public string NewEntityId
+        {
+            get => _newEntityId;
+            set { _newEntityId = value; OnPropertyChanged(nameof(NewEntityId)); ValidateNewId(); }
+        }
+
+        private string _newEntityName = "";
+        public string NewEntityName
+        {
+            get => _newEntityName;
+            set { _newEntityName = value; OnPropertyChanged(nameof(NewEntityName)); ValidateNewName(); }
+        }
+
+        private string _newEntityIp = "";
+        public string NewEntityIp
+        {
+            get => _newEntityIp;
+            set { _newEntityIp = value; OnPropertyChanged(nameof(NewEntityIp)); ValidateNewIp(); }
+        }
+
+        private ServerType _newEntityType;
+        public ServerType NewEntityType
+        {
+            get => _newEntityType;
+            set { _newEntityType = value; OnPropertyChanged(nameof(NewEntityType)); ValidateNewType(); }
+        }
+
+        // Validation poruke
+        private string _newEntityIdError = "";
+        private string _newEntityNameError = "";
+        private string _newEntityIpError = "";
+        private string _newEntityTypeError = "";
+
+        public string NewEntityIdError { get => _newEntityIdError; set { _newEntityIdError = value; OnPropertyChanged(nameof(NewEntityIdError)); } }
+        public string NewEntityNameError { get => _newEntityNameError; set { _newEntityNameError = value; OnPropertyChanged(nameof(NewEntityNameError)); } }
+        public string NewEntityIpError { get => _newEntityIpError; set { _newEntityIpError = value; OnPropertyChanged(nameof(NewEntityIpError)); } }
+        public string NewEntityTypeError { get => _newEntityTypeError; set { _newEntityTypeError = value; OnPropertyChanged(nameof(NewEntityTypeError)); } }
+
+        // ── Virtuelna tastatura ───────────────────────────────────────
+        private bool _isKeyboardVisible;
+        public bool IsKeyboardVisible
+        {
+            get => _isKeyboardVisible;
+            set { _isKeyboardVisible = value; OnPropertyChanged(nameof(IsKeyboardVisible)); }
+        }
+
+        private string _activeKeyboardTarget = ""; // "IdFilter" ili "NewId"
+
+        // ── Undo ─────────────────────────────────────────────────────
+        private readonly Stack<IUndoAction> _undoStack = new Stack<IUndoAction>();
+
+        // ── Komande ──────────────────────────────────────────────────
+        public ICommand ApplyFilterCommand { get; }
+        public ICommand ClearFilterCommand { get; }
+        public ICommand AddEntityCommand { get; }
+        public ICommand DeleteEntityCommand { get; }
+        public ICommand ConfirmAddCommand { get; }
+        public ICommand CancelAddCommand { get; }
+        public ICommand ShowKeyboardCommand { get; }
+        public ICommand KeyPressCommand { get; }
+        public ICommand KeyboardOkCommand { get; }
+        public ICommand KeyboardBackspaceCommand { get; }
+        public ICommand UndoCommand { get; }
+
+        public NetworkEntitiesViewModel()
+        {
+            _selectedServerType = ServerTypes[0]; // "All"
+            _filteredEntities = new ObservableCollection<ServerEntity>(Entities);
+
+            // Pratimo promene u Entities listi
+            Entities.CollectionChanged += (s, e) => ApplyFilter();
+
+            ApplyFilterCommand = new RelayCommand(_ => ApplyFilter());
+            ClearFilterCommand = new RelayCommand(_ => ClearFilter());
+            AddEntityCommand = new RelayCommand(_ => ShowAddForm());
+            DeleteEntityCommand = new RelayCommand(_ => DeleteSelected(),
+                                            _ => SelectedEntity != null);
+            ConfirmAddCommand = new RelayCommand(_ => ConfirmAdd());
+            CancelAddCommand = new RelayCommand(_ => HideAddForm());
+            ShowKeyboardCommand = new RelayCommand(target => ShowKeyboard(target?.ToString()));
+            KeyPressCommand = new RelayCommand(key => OnKeyPress(key?.ToString()));
+            KeyboardOkCommand = new RelayCommand(_ => HideKeyboard());
+            KeyboardBackspaceCommand = new RelayCommand(_ => OnBackspace());
+            UndoCommand = new RelayCommand(_ => ExecuteUndo(),
+                                            _ => _undoStack.Count > 0);
+        }
+
+        // ── Filter logika ─────────────────────────────────────────
+        private void ApplyFilter()
+        {
+            var result = Entities.AsEnumerable();
+
+            // Filter po tipu
+            if (SelectedServerType != null && SelectedServerType.Name != "All")
+                result = result.Where(e => e.Type?.Name == SelectedServerType.Name);
+
+            // Filter po ID
+            if (!string.IsNullOrWhiteSpace(IdFilterText) && int.TryParse(IdFilterText, out int idVal))
+            {
+                if (IsGreaterThan) result = result.Where(e => e.Id > idVal);
+                else if (IsLessThan) result = result.Where(e => e.Id < idVal);
+                else if (IsEqualTo) result = result.Where(e => e.Id == idVal);
+            }
+
+            FilteredEntities = new ObservableCollection<ServerEntity>(result);
+        }
+
+        private void ClearFilter()
+        {
+            SelectedServerType = ServerTypes[0];
+            IdFilterText = "";
+            IdFilterError = "";
+            IsLessThan = true;
+            IsGreaterThan = false;
+            IsEqualTo = false;
+            FilteredEntities = new ObservableCollection<ServerEntity>(Entities);
+        }
+
+        // ── Add / Delete ──────────────────────────────────────────
+        private void ShowAddForm()
+        {
+            NewEntityId = "";
+            NewEntityName = "";
+            NewEntityIp = "";
+            NewEntityType = null;
+            ClearValidationErrors();
+            IsAddFormVisible = true;
+        }
+
+        private void HideAddForm() => IsAddFormVisible = false;
+
+        private void ConfirmAdd()
+        {
+            ValidateAll();
+            if (!string.IsNullOrEmpty(NewEntityIdError) ||
+                !string.IsNullOrEmpty(NewEntityNameError) ||
+                !string.IsNullOrEmpty(NewEntityIpError) ||
+                !string.IsNullOrEmpty(NewEntityTypeError))
+                return;
+
+            var entity = new ServerEntity
+            {
+                Id = int.Parse(NewEntityId),
+                Name = NewEntityName,
+                IpAddress = NewEntityIp,
+                Type = NewEntityType
+            };
+
+            Entities.Add(entity);
+
+            // Sačuvaj za Undo
+            _undoStack.Push(new AddEntityAction(Entities, entity));
+
+            HideAddForm();
+            ApplyFilter();
+
+            // Restart simulatora
+            RestartSimulator();
+        }
+
+        private void DeleteSelected()
+        {
+            if (SelectedEntity == null) return;
+
+            // Potvrda brisanja — preko ViewModel-a (ne MessageBox)
+            var confirmVm = new ConfirmDialogViewModel(
+                $"Are you sure you want to delete '{SelectedEntity.Name}'?",
+                onConfirm: () =>
+                {
+                    var deleted = SelectedEntity;
+                    int index = Entities.IndexOf(deleted);
+
+                    Entities.Remove(deleted);
+                    _undoStack.Push(new DeleteEntityAction(Entities, deleted, index));
+                    ApplyFilter();
+                    RestartSimulator();
+                });
+
+            // Prikazati confirm dialog kroz MainWindow
+            MainWindowViewModel.ShowConfirmDialog?.Invoke(confirmVm);
+        }
+
+        private void RestartSimulator()
+        {
+            try
+            {
+                // Pronalazimo MeteringSimulator proces i restartujemo ga
+                var simulators = System.Diagnostics.Process
+                    .GetProcessesByName("MeteringSimulator");
+                foreach (var p in simulators) p.Kill();
+
+                System.Diagnostics.Process.Start(
+                    System.IO.Path.Combine(
+                        AppDomain.CurrentDomain.BaseDirectory,
+                        @"..\..\..\..\MeteringSimulator\bin\Debug\MeteringSimulator.exe"));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Could not restart simulator: {ex.Message}");
+            }
+        }
+
+        // ── Virtuelna tastatura ───────────────────────────────────
+        private void ShowKeyboard(string target)
+        {
+            _activeKeyboardTarget = target;
+            IsKeyboardVisible = true;
+        }
+
+        private void HideKeyboard() => IsKeyboardVisible = false;
+
+        private void OnKeyPress(string key)
+        {
+            if (_activeKeyboardTarget == "IdFilter")
+                IdFilterText += key;
+            else if (_activeKeyboardTarget == "NewId")
+                NewEntityId += key;
+        }
+
+        private void OnBackspace()
+        {
+            if (_activeKeyboardTarget == "IdFilter" && IdFilterText.Length > 0)
+                IdFilterText = IdFilterText.Substring(0, IdFilterText.Length - 1);
+            else if (_activeKeyboardTarget == "NewId" && NewEntityId.Length > 0)
+                NewEntityId = NewEntityId.Substring(0, NewEntityId.Length - 1);
+        }
+
+        // ── Undo ─────────────────────────────────────────────────
+        private void ExecuteUndo()
+        {
+            if (_undoStack.Count > 0)
+            {
+                _undoStack.Pop().Undo();
+                ApplyFilter();
+                RestartSimulator();
+            }
+        }
+
+        // ── Validacija ────────────────────────────────────────────
+        private void ValidateIdFilter()
+        {
+            if (string.IsNullOrWhiteSpace(IdFilterText))
+            { IdFilterError = ""; return; }
+
+            IdFilterError = int.TryParse(IdFilterText, out _)
+                ? "" : "ID must be a whole number.";
+        }
+
+        private void ValidateNewId()
+        {
+            if (string.IsNullOrWhiteSpace(NewEntityId))
+            { NewEntityIdError = "ID is required."; return; }
+
+            if (!int.TryParse(NewEntityId, out int id))
+            { NewEntityIdError = "ID must be a whole number."; return; }
+
+            if (id < 0)
+            { NewEntityIdError = "ID must be a positive number."; return; }
+
+            if (Entities.Any(e => e.Id == id))
+            { NewEntityIdError = "An entity with this ID already exists."; return; }
+
+            NewEntityIdError = "";
+        }
+
+        private void ValidateNewName()
+        {
+            NewEntityNameError = string.IsNullOrWhiteSpace(NewEntityName)
+                ? "Name is required." : "";
+        }
+
+        private void ValidateNewIp()
+        {
+            if (string.IsNullOrWhiteSpace(NewEntityIp))
+            { NewEntityIpError = "IP address is required."; return; }
+
+            var ipPattern = @"^(\d{1,3}\.){3}\d{1,3}$";
+            if (!Regex.IsMatch(NewEntityIp, ipPattern))
+            { NewEntityIpError = "Enter a valid IP address (e.g. 192.168.1.10)."; return; }
+
+            NewEntityIpError = "";
+        }
+
+        private void ValidateNewType()
+        {
+            NewEntityTypeError = NewEntityType == null
+                ? "Please select a server type." : "";
+        }
+
+        private void ValidateAll()
+        {
+            ValidateNewId();
+            ValidateNewName();
+            ValidateNewIp();
+            ValidateNewType();
+        }
+
+        private void ClearValidationErrors()
+        {
+            NewEntityIdError = NewEntityNameError =
+            NewEntityIpError = NewEntityTypeError = "";
+        }
+    }
+}

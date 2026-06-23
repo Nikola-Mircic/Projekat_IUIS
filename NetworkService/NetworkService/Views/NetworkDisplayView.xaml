@@ -1,12 +1,289 @@
-﻿<UserControl x:Class="NetworkService.Views.NetworkDisplayView"
+﻿<UserControl x:Class="NetworkService.View.NetworkDisplayView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:NetworkService.Views"
-             mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
+             xmlns:vm="clr-namespace:NetworkService.ViewModel"
+             Background="#F5F5F5">
+
+    <UserControl.DataContext>
+        <vm:NetworkDisplayViewModel/>
+    </UserControl.DataContext>
+
+    <UserControl.InputBindings>
+        <KeyBinding Key="Z" Modifiers="Ctrl" Command="{Binding UndoCommand}"/>
+    </UserControl.InputBindings>
+
     <Grid>
-            
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="60"/>
+        </Grid.RowDefinitions>
+
+        <!-- ═══════════════════ CANVAS MREŽA (pun width) ═══════════════════ -->
+        <Border Grid.Row="0" Background="White"
+                Margin="12,12,12,6" CornerRadius="12"
+                Padding="8">
+            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Linije između entiteta -->
+                    <Canvas Grid.Row="0"
+                            IsHitTestVisible="False"
+                            Panel.ZIndex="10">
+                        <ItemsControl ItemsSource="{Binding Connections}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <Canvas/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Line X1="{Binding X1}" Y1="{Binding Y1}"
+                                          X2="{Binding X2}" Y2="{Binding Y2}"
+                                          Stroke="#7C3AED"
+                                          StrokeThickness="2"
+                                          StrokeDashArray="4,2"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Canvas>
+
+                    <!-- 4x3 = 12 canvas ćelija -->
+                    <ItemsControl Grid.Row="0" ItemsSource="{Binding CanvasSlots}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Rows="4" Columns="3"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Margin="4"
+                                        CornerRadius="10"
+                                        BorderThickness="2"
+                                        BorderBrush="#E5E7EB"
+                                        Background="#F9FAFB"
+                                        MinHeight="90"
+                                        Tag="{Binding}"
+                                        AllowDrop="True"
+                                        Drop="CanvasSlot_Drop"
+                                        DragOver="CanvasSlot_DragOver"
+                                        DragLeave="CanvasSlot_DragLeave"
+                                        MouseLeftButtonUp="EntitySlot_MouseLeftButtonUp">
+                                    <Grid>
+
+                                        <!-- Prazna ćelija -->
+                                        <TextBlock
+                                            Text="+"
+                                            FontSize="24"
+                                            Foreground="#D1D5DB"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            Visibility="{Binding IsEmpty,
+                                                Converter={StaticResource BoolToVisibilityConverter}}"/>
+
+                                        <!-- Popunjena ćelija -->
+                                        <Border
+                                            Visibility="{Binding IsOccupied,
+                                                Converter={StaticResource BoolToVisibilityConverter}}"
+                                            CornerRadius="8"
+                                            Padding="6"
+                                            Background="{Binding Entity.IsOutOfRange,
+                                                Converter={StaticResource BoolToAlarmBrushConverter}}"
+                                            Cursor="SizeAll"
+                                            MouseLeftButtonDown="EntitySlot_MouseLeftButtonDown"
+                                            Tag="{Binding}">
+                                            <Grid>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                </Grid.RowDefinitions>
+
+                                                <Grid Grid.Row="0" Margin="0,0,0,4">
+                                                    <Image Source="{Binding Entity.Type.ImagePath}"
+                                                           Width="32" Height="32"
+                                                           HorizontalAlignment="Center"/>
+                                                    <Ellipse Width="10" Height="10"
+                                                             Fill="#DC2626"
+                                                             HorizontalAlignment="Right"
+                                                             VerticalAlignment="Top"
+                                                             Visibility="{Binding Entity.IsOutOfRange,
+                                                                 Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                                </Grid>
+
+                                                <TextBlock Grid.Row="1"
+                                                           Text="{Binding Entity.Id, StringFormat='ID: {0}'}"
+                                                           FontSize="11" FontWeight="SemiBold"
+                                                           Foreground="#1E1E2E"
+                                                           HorizontalAlignment="Center"/>
+
+                                                <TextBlock Grid.Row="2"
+                                                           Text="{Binding Entity.Name}"
+                                                           FontSize="10"
+                                                           Foreground="#6B7280"
+                                                           HorizontalAlignment="Center"
+                                                           TextTrimming="CharacterEllipsis"/>
+
+                                                <TextBlock Grid.Row="3"
+                                                           Text="{Binding Entity.LastMeasuredValue,
+                                                               StringFormat={}{0:F1}%}"
+                                                           FontSize="12" FontWeight="Bold"
+                                                           Foreground="{Binding Entity.IsOutOfRange,
+                                                               Converter={StaticResource BoolToColorConverter}}"
+                                                           HorizontalAlignment="Center"
+                                                           Margin="0,2,0,0"/>
+                                            </Grid>
+                                        </Border>
+
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Grid>
+            </ScrollViewer>
+        </Border>
+
+        <!-- ═══════════════════ DRAWER OVERLAY ═══════════════════ -->
+        <!-- Pozadinska overlay — klik zatvara drawer -->
+        <Border Grid.Row="0"
+                Background="#40000000"
+                Panel.ZIndex="30"
+                Visibility="{Binding IsTreeViewOpen,
+                    Converter={StaticResource BoolToVisibilityConverter}}"
+                MouseLeftButtonDown="Overlay_MouseLeftButtonDown"/>
+
+        <!-- Drawer panel — klizi sa desne strane -->
+        <Border Grid.Row="0"
+                Width="300"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Stretch"
+                Background="{StaticResource SurfaceBrush}"
+                CornerRadius="12,0,0,12"
+                Panel.ZIndex="40"
+                Margin="15,12,0,6"
+                Visibility="{Binding IsTreeViewOpen,
+                    Converter={StaticResource BoolToVisibilityConverter}}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Drawer header -->
+                <Border Grid.Row="0"
+                        Background="#2D2D3E"
+                        CornerRadius="12,0,0,0"
+                        Padding="16,14">
+                    <TextBlock Text="Servers"
+                               FontSize="14"
+                               FontWeight="SemiBold"
+                               Foreground="White"/>
+                </Border>
+
+                <!-- TreeView -->
+                <TreeView Grid.Row="1"
+                  ItemsSource="{Binding GroupedEntities}"
+                  BorderThickness="0"
+                  Background="Transparent"
+                  Margin="8,8,8,8"
+                  SelectedItemChanged="TreeView_SelectedItemChanged"
+                  MouseLeftButtonUp="TreeView_MouseLeftButtonUp">
+                    <TreeView.ItemTemplate>
+                        <HierarchicalDataTemplate ItemsSource="{Binding Entities}">
+
+                            <!-- Tip (root node) -->
+                            <TextBlock Text="{Binding TypeName}"
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       Foreground="#A78BFA"
+                                       Margin="0,6,0,2"/>
+
+                            <HierarchicalDataTemplate.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Padding="6,8"
+                                            CornerRadius="6"
+                                            Cursor="SizeAll"
+                                            MouseLeftButtonUp="EntitySlot_MouseLeftButtonUp"
+                                            Tag="{Binding}"
+                                            ToolTip="{Binding Name}"
+                                            Margin="0,2">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Background" Value="Transparent"/>
+                                                <Style.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter Property="Background" Value="#2D2D3E"/>
+                                                    </Trigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Image Source="{Binding Type.ImagePath}"
+                                                   Width="16" Height="16"
+                                                   Margin="0,0,8,0"/>
+                                            <TextBlock Text="{Binding Name}"
+                                                       FontSize="12"
+                                                       Foreground="{StaticResource PrimaryBrush}"
+                                                       VerticalAlignment="Center"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       MaxWidth="120"/>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </HierarchicalDataTemplate.ItemTemplate>
+
+                        </HierarchicalDataTemplate>
+                    </TreeView.ItemTemplate>
+
+                    <TreeView.ItemContainerStyle>
+                        <Style TargetType="TreeViewItem">
+                            <Setter Property="IsExpanded" Value="True"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="TreeViewItem">
+                                        <StackPanel>
+                                            <ContentPresenter ContentSource="Header" Margin="4,0"/>
+                                            <ItemsPresenter Margin="8,0,0,0"/>
+                                        </StackPanel>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </TreeView.ItemContainerStyle>
+                </TreeView>
+            </Grid>
+        </Border>
+
+        <!-- ═══════════════════ TOGGLE DUGME ═══════════════════ -->
+        <Button Grid.Row="0"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Center"
+                Command="{Binding ToggleTreeViewCommand}"
+                Style="{StaticResource TreeToggleButtonStyle}"
+                ToolTip="Toggle server list"
+                Panel.ZIndex="50"
+                Margin="0,0,0,0">
+            <TextBlock Text="{Binding TreeToggleIcon}"
+                       FontSize="24"
+                       FontWeight="Bold"
+                       Foreground="White"/>
+        </Button>
+
+        <!-- ═══════════════════ UNDO DUGME ═══════════════════ -->
+        <Grid Grid.Row="1" Margin="12,0,12,8">
+            <Button HorizontalAlignment="Right"
+                    VerticalAlignment="Bottom"
+                    Command="{Binding UndoCommand}"
+                    Style="{StaticResource UndoButtonStyle}"
+                    ToolTip="Undo last action (Ctrl+Z)">
+                <TextBlock Text="↩" FontSize="22"/>
+            </Button>
+        </Grid>
+
     </Grid>
 </UserControl>
