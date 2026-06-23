@@ -12,6 +12,7 @@
         <conv:StringToVisibilityConverter x:Key="StringToVisibilityConverter"/>
         <conv:BoolToColorConverter        x:Key="BoolToColorConverter"/>
         <conv:BoolToAlarmBrushConverter   x:Key="BoolToAlarmBrushConverter"/>
+        <conv:NullToVisibilityConverter   x:Key="NullToVisibilityConverter"/>
 
         <!-- ═══════════════════════════════════════════════════════════
              PALETA BOJA

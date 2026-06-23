@@ -1,28 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+﻿using System.Windows.Controls;
 
 namespace NetworkService.Views
 {
-    /// <summary>
-    /// Interaction logic for GraphView.xaml
-    /// </summary>
     public partial class GraphView : UserControl
     {
         public GraphView()
         {
             InitializeComponent();
+        }
+
+        private void BarCanvas_SizeChanged(object sender, System.Windows.SizeChangedEventArgs e)
+        {
+            if (DataContext is ViewModel.GraphViewModel vm)
+            {
+                vm.CanvasWidth = e.NewSize.Width;
+                vm.CanvasHeight = e.NewSize.Height;
+                vm.RedrawGraph();
+            }
         }
     }
 }

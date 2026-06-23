@@ -61,6 +61,7 @@
     <Compile Include="Model\ServerEntity.cs" />
     <Compile Include="Model\ServerType.cs" />
     <Compile Include="ViewModel\BaseViewModel.cs" />
+    <Compile Include="ViewModel\GraphViewModel.cs" />
     <Compile Include="ViewModel\MainWindowViewModel.cs" />
     <Compile Include="ViewModel\NetworkDisplayViewModel.cs" />
     <Compile Include="ViewModel\NetworkEntitiesViewModel.cs" />
